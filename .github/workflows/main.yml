@@ -38,9 +38,9 @@ jobs:
           export PATH=$ANDROID_HOME/cmdline-tools-latest/bin:$PATH
           yes | $ANDROID_HOME/cmdline-tools-latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Build APK (release, unsigned)
+      - name: Build APK
         run: |
-          flet build apk --release
+          flet build apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -64,9 +64,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install flet requests numpy pandas matplotlib
 
-      - name: Build IPA (release, unsigned)
+      - name: Build IPA
         run: |
-          flet build ipa --release
+          flet build ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
@@ -113,20 +113,7 @@ jobs:
       - run: |
           python -m pip install --upgrade pip
           pip install flet pyinstaller requests numpy pandas matplotlib
-          pyinstaller --onefile main.py ^
-            --hidden-import=flet ^
-            --hidden-import=os ^
-            --hidden-import=hashlib ^
-            --hidden-import=re ^
-            --hidden-import=keyword ^
-            --hidden-import=builtins ^
-            --hidden-import=importlib ^
-            --hidden-import=threading ^
-            --hidden-import=time ^
-            --hidden-import=subprocess ^
-            --hidden-import=sys ^
-            --hidden-import=platform ^
-            --hidden-import=pathlib
+          pyinstaller --onefile main.py --hidden-import=flet --hidden-import=os --hidden-import=hashlib --hidden-import=re --hidden-import=keyword --hidden-import=builtins --hidden-import=importlib --hidden-import=threading --hidden-import=time --hidden-import=subprocess --hidden-import=sys --hidden-import=platform --hidden-import=pathlib
       - uses: actions/upload-artifact@v4
         with:
           name: windows-exe
