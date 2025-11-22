@@ -30,23 +30,23 @@ jobs:
           pip install flet --upgrade
           pip install flet-cli --upgrade
 
+      - name: Init Flutter Project if missing
+        run: |
+          if [ ! -d "app" ]; then
+            flutter create app
+          fi
+
       - name: Build App
-        working-directory: app   # ⚠️ 请改成你的 Flutter 项目目录
+        working-directory: app
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            # Android APK
             flutter build apk --release
-            # Linux 桌面
             flutter build linux --release
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            # Windows 桌面
             flutter build windows --release
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            # iOS IPA (未签名)
             flutter build ipa --release --no-codesign
-            # macOS 桌面 .app
             flutter build macos --release
-            # 打包成 DMG
             hdiutil create -volname MyApp \
               -srcfolder build/macos/Build/Products/Release/MyApp.app \
               -ov -format UDZO build/macos/Build/Products/Release/MyApp.dmg
