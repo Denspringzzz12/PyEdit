@@ -1,16 +1,14 @@
-name: Build Flet App
+name: Python CI
 
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-
+  build-android:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,49 +18,82 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Flutter SDK
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.19.5'
-
-      - name: Install Flet
+      - name: Install Python dependencies
         run: |
-          pip install flet --upgrade
-          pip install flet-cli --upgrade
+          python -m pip install --upgrade pip
+          pip install flet requests numpy pandas matplotlib
 
-      - name: Init Flutter Project
-        run: flutter create app
-
-      - name: Build App (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        working-directory: app
+      - name: Install Java & Gradle
         run: |
-          flutter build apk --release
-          flutter build linux --release
+          sudo apt-get update
+          sudo apt-get install -y openjdk-17-jdk gradle unzip wget
 
-      - name: Build App (Windows)
-        if: matrix.os == 'windows-latest'
-        working-directory: app
-        run: flutter build windows --release
-
-      - name: Build App (macOS)
-        if: matrix.os == 'macos-latest'
-        working-directory: app
+      - name: Install Android SDK
         run: |
-          flutter build ipa --release --no-codesign
-          flutter build macos --release
-          hdiutil create -volname MyApp \
-            -srcfolder build/macos/Build/Products/Release/MyApp.app \
-            -ov -format UDZO build/macos/Build/Products/Release/MyApp.dmg
+          ANDROID_HOME=$HOME/android-sdk
+          mkdir -p $ANDROID_HOME
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          unzip cmdline-tools.zip -d $ANDROID_HOME
+          mv $ANDROID_HOME/cmdline-tools $ANDROID_HOME/cmdline-tools-latest
+          export PATH=$ANDROID_HOME/cmdline-tools-latest/bin:$PATH
+          yes | $ANDROID_HOME/cmdline-tools-latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Upload Artifact
+      - name: Build APK (unsigned)
+        run: |
+          flet build apk --no-sign
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.os }}
-          path: |
-            app/build/app/outputs/flutter-apk/app-release.apk
-            app/build/linux/x64/release/bundle/*
-            app/build/windows/x64/runner/Release/*.exe
-            app/build/ios/ipa/*.ipa
-            app/build/macos/Build/Products/Release/*.app
-            app/build/macos/Build/Products/Release/*.dmg
+          name: android-apk
+          path: build/*
+
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          python -m pip install --upgrade pip
+          pip install flet pyinstaller requests numpy pandas matplotlib
+          pyinstaller --onefile main.py
+          # 可选：用 fpm 打包成 deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-deb
+          path: dist/*
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller requests numpy pandas matplotlib
+          pyinstaller --onefile main.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: dist/*
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller requests numpy pandas matplotlib
+          pyinstaller --onefile main.py
+          hdiutil create -volname MyApp -srcfolder dist -ov -format UDZO MyApp.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: MyApp.dmg
