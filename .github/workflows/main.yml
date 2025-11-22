@@ -7,30 +7,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      # ... 其他步骤 (如 checkout, setup-python) ...
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.8'
+      - name: Install Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.5' # 指定一个稳定版本
 
-    - name: Upgrade and Reinstall Flet CLI
-      run: |
-        pip install flet-cli --upgrade
-        # 如果升级后问题依旧，尝试完全重新安装
-        # pip uninstall -y flet-cli
-        # pip install flet-cli
-        
-    - name: Install Project Dependencies
-      run: |
-        pip install flet  # 确保安装了 Flet 库[citation:6]
-        # 在此添加你项目可能需要的其他依赖，例如 requests, tqdm 等[citation:5]
-        
-    - name: Build APK
-      run: |
-        flet build apk --include-packages subprocess,platform,pathlib,requests,tqdm
-        flet build ipa --include-packages subprocess,platform,pathlib,requests,tqdm
-        flet build windows --include-packages subprocess,platform,pathlib,requests,tqdm --name "PyEdit IDE"
+      - name: Upgrade Flet and build dependencies
+        run: |
+          pip install flet --upgrade
+          # 可选：如果问题依旧，可以尝试强制重新安装 flet-cli
+          # pip install --force-reinstall flet-cli
+
+      - name: Build APK
+        run: |
+          flet build apk --include-packages subprocess,platform,pathlib,requests,tqdm
