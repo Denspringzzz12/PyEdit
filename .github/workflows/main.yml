@@ -30,11 +30,8 @@ jobs:
           pip install flet --upgrade
           pip install flet-cli --upgrade
 
-      - name: Init Flutter Project if missing
-        run: |
-          if [ ! -d "app" ]; then
-            flutter create app
-          fi
+      - name: Init Flutter Project
+        run: flutter create app
 
       - name: Build App
         working-directory: app
