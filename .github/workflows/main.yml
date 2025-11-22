@@ -5,9 +5,12 @@ on:
     branches: [ main ]
 
 jobs:
-  # Android 构建
-  build-android:
-    runs-on: ubuntu-latest
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,83 +25,40 @@ jobs:
         with:
           flutter-version: '3.19.5'
 
-      - name: Upgrade Flet and build dependencies
+      - name: Install Flet
         run: |
           pip install flet --upgrade
           pip install flet-cli --upgrade
 
-      - name: Build APK
+      - name: Build App
+        working-directory: app   # ⚠️ 换成你的 Flutter 项目目录
         run: |
-          flutter build apk --release
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            # Android APK
+            flutter build apk --release
+            # Linux 桌面
+            flutter build linux --release
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            flutter build windows --release
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            # iOS IPA
+            flutter build ipa --release --no-codesign
+            # macOS 桌面 .app
+            flutter build macos --release
+            # 打包成 DMG
+            hdiutil create -volname MyApp \
+              -srcfolder build/macos/Build/Products/Release/MyApp.app \
+              -ov -format UDZO build/macos/Build/Products/Release/MyApp.dmg
+          fi
 
-      - name: Upload APK Artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-
-  # Windows 构建
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Flutter SDK
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.19.5'
-
-      - name: Upgrade Flet and build dependencies
-        run: |
-          pip install flet --upgrade
-          pip install flet-cli --upgrade
-
-      - name: Build Windows EXE
-        run: |
-          flutter build windows --release
-
-      - name: Upload Windows Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-exe
-          path: build/windows/x64/runner/Release/*.exe
-
-  # iOS 构建
-  build-ios:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Flutter SDK
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.19.5'
-
-      - name: Upgrade Flet and build dependencies
-        run: |
-          pip install flet --upgrade
-          pip install flet-cli --upgrade
-
-      - name: Build iOS IPA
-        run: |
-          flutter build ipa --release --no-codesign
-
-      - name: Upload IPA Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-ipa
-          path: build/ios/ipa/*.ipa
-
-          
+          name: build-${{ matrix.os }}
+          path: |
+            app/build/app/outputs/flutter-apk/app-release.apk
+            app/build/linux/x64/release/bundle/*
+            app/build/windows/x64/runner/Release/*.exe
+            app/build/ios/ipa/*.ipa
+            app/build/macos/Build/Products/Release/*.app
+            app/build/macos/Build/Products/Release/*.dmg
