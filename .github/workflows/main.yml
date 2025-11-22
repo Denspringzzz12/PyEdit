@@ -33,21 +33,27 @@ jobs:
       - name: Init Flutter Project
         run: flutter create app
 
-      - name: Build App
+      - name: Build App (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
         working-directory: app
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            flutter build apk --release
-            flutter build linux --release
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            flutter build windows --release
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            flutter build ipa --release --no-codesign
-            flutter build macos --release
-            hdiutil create -volname MyApp \
-              -srcfolder build/macos/Build/Products/Release/MyApp.app \
-              -ov -format UDZO build/macos/Build/Products/Release/MyApp.dmg
-          fi
+          flutter build apk --release
+          flutter build linux --release
+
+      - name: Build App (Windows)
+        if: matrix.os == 'windows-latest'
+        working-directory: app
+        run: flutter build windows --release
+
+      - name: Build App (macOS)
+        if: matrix.os == 'macos-latest'
+        working-directory: app
+        run: |
+          flutter build ipa --release --no-codesign
+          flutter build macos --release
+          hdiutil create -volname MyApp \
+            -srcfolder build/macos/Build/Products/Release/MyApp.app \
+            -ov -format UDZO build/macos/Build/Products/Release/MyApp.dmg
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
