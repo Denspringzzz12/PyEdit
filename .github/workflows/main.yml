@@ -1,0 +1,117 @@
+name: Build Flet Multi-Platform
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flet
+        
+    - name: Build APK
+      run: |
+        flet build apk --include-packages subprocess,platform,pathlib,requests,tqdm --name "PyEdit IDE" --description "Full Python IDE with Terminal"
+        
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PyEdit-IDE-APK
+        path: build/apk/*.apk
+        retention-days: 30
+
+  build-ipa:
+    name: Build iOS IPA
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flet
+        
+    - name: Build IPA
+      run: |
+        flet build ipa --include-packages subprocess,platform,pathlib,requests,tqdm --name "PyEdit IDE" --description "Full Python IDE with Terminal"
+        
+    - name: Upload IPA artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PyEdit-IDE-IPA
+        path: build/ipa/*.ipa
+        retention-days: 30
+
+  build-windows:
+    name: Build Windows App
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flet
+        
+    - name: Build Windows
+      run: |
+        flet build windows --include-packages subprocess,platform,pathlib,requests,tqdm --name "PyEdit IDE"
+        
+    - name: Upload Windows artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PyEdit-IDE-Windows
+        path: build/windows/*
+        retention-days: 30
+
+  create-release:
+    name: Create Release
+    needs: [build-apk, build-ipa, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |         
+          PyEdit-IDE-APK/*.apk
+          PyEdit-IDE-IPA/*.ipa
+          PyEdit-IDE-Windows/**/*
+          PyEdit-IDE-APK/*.apk
+          PyEdit-IDE-IPA/*.ipa
+          PyEdit-IDE-Windows/**/*
