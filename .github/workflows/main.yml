@@ -40,7 +40,7 @@ jobs:
 
       - name: Build APK (unsigned)
         run: |
-          flet build apk --no-sign
+          flet build apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
