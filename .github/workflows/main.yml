@@ -31,7 +31,7 @@ jobs:
           pip install flet-cli --upgrade
 
       - name: Build App
-        working-directory: app   # ⚠️ 换成你的 Flutter 项目目录
+        working-directory: app   # ⚠️ 请改成你的 Flutter 项目目录
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             # Android APK
@@ -39,9 +39,10 @@ jobs:
             # Linux 桌面
             flutter build linux --release
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            # Windows 桌面
             flutter build windows --release
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            # iOS IPA
+            # iOS IPA (未签名)
             flutter build ipa --release --no-codesign
             # macOS 桌面 .app
             flutter build macos --release
