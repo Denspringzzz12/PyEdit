@@ -40,7 +40,7 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/your-username/pyedit-ide.git
+git clone https://github.com/Denspringzzz12/PyEdit
 
 # 安装依赖
 pip install flet
